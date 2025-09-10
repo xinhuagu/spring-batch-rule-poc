@@ -1,196 +1,212 @@
-# Spring Batch Rule POC 1
+# Spring Batch Rule POC
 
-## 项目概述
-这是一个基于Spring Boot 3和Spring Batch的POC项目，用于演示批处理和规则引擎的集成。
+## Project Overview
+A Spring Boot 3 application demonstrating Spring Batch integration with a rule-based data transformation system. This POC showcases PostgreSQL to CSV export with rule engine capabilities for data processing.
 
-## 技术栈
+## Technology Stack
 - **Java**: 17
 - **Spring Boot**: 3.2.5
 - **Spring Batch**: 5.x
-- **数据库**: H2 (内存数据库)
-- **构建工具**: Maven
-- **其他**: Lombok, Spring Data JPA
+- **Database**: PostgreSQL (H2 for tests)
+- **Build Tool**: Maven
+- **Others**: Lombok, Spring Data JPA, HikariCP
 
-## 项目结构
+## Project Structure
 ```
-spring-batch-rule-poc-1/
+spring-batch-rule-poc/
 ├── src/
 │   ├── main/
 │   │   ├── java/
 │   │   │   └── com/accenture/poc1/
-│   │   │       ├── Application.java           # Spring Boot主类
-│   │   │       └── config/
-│   │   │           └── BatchConfig.java       # Spring Batch配置
+│   │   │       ├── Application.java              # Spring Boot main class
+│   │   │       ├── config/BatchConfig.java       # Spring Batch configuration
+│   │   │       ├── model/Client.java             # Client entity model
+│   │   │       ├── processor/ClientRuleProcessor.java # Rule-based processor
+│   │   │       ├── rule/RuleEngine.java          # Rule engine implementation
+│   │   │       └── runner/JobRunner.java         # Command line job runner
 │   │   └── resources/
-│   │       └── application.yml                # 应用配置文件
+│   │       ├── application.yml                   # Main configuration
+│   │       └── application-test.yml              # Test configuration
 │   └── test/
 │       ├── java/
 │       │   └── com/accenture/poc1/
-│       │       ├── ApplicationTests.java      # 应用测试类
-│       │       └── config/
-│       │           └── BatchConfigTest.java   # Batch配置测试
-│       └── resources/
-│           └── application-test.yml           # 测试环境配置
-├── pom.xml                                     # Maven配置文件
-└── README.md                                   # 项目文档
+│       │       ├── ApplicationTests.java         # Application tests
+│       │       ├── ClientToCsvJobTest.java       # Job integration tests
+│       │       ├── ClientToCsvManualTest.java    # Manual test scenarios
+│       │       ├── config/TestBatchConfiguration.java # Test batch config
+│       │       ├── processor/ClientRuleProcessorTest.java # Processor tests
+│       │       └── rule/RuleEngineTest.java      # Rule engine tests
+├── pom.xml                                        # Maven configuration
+├── CLAUDE.md                                      # Development guidance
+└── README.md                                      # Project documentation
 ```
 
-## 快速开始
+## Quick Start
 
-### 前置条件
-- JDK 17 或更高版本
-- Maven 3.6 或更高版本
+### Prerequisites
+- JDK 17 or higher
+- Maven 3.6 or higher
+- PostgreSQL database running on localhost:5432
 
-### 构建项目
+### Database Setup
+Create a PostgreSQL database named `poc` with user `xinhua` (no password required for local development).
+
+### Build Project
 ```bash
-cd spring-batch-rule-poc-1
+cd spring-batch-rule-poc
 mvn clean install
 ```
 
-### 运行应用
+### Run Application
 ```bash
-# 方式1: 使用Maven Spring Boot插件
+# Using Maven Spring Boot plugin
 mvn spring-boot:run
 
-# 方式2: 运行打包后的JAR文件
+# Run specific batch job
+mvn spring-boot:run -Dspring-boot.run.arguments="clientToCsv"
+
+# Run packaged JAR
 java -jar target/spring-batch-rule-poc-1-1.0.0-SNAPSHOT.jar
 ```
 
-### 运行测试
+### Run Tests
 ```bash
-# 运行所有测试
+# Run all tests
 mvn test
 
-# 运行特定测试类
+# Run specific test class
 mvn test -Dtest=BatchConfigTest
 
-# 跳过测试构建
+# Build without tests
 mvn clean install -DskipTests
 ```
 
-## 功能特性
+## Features
 
-### 当前实现
-- ✅ Spring Batch基础框架配置
-- ✅ H2内存数据库集成
-- ✅ 示例Job和Step实现
-- ✅ Tasklet示例
-- ✅ 单元测试框架
+### Current Implementation
+- ✅ Spring Batch framework with PostgreSQL integration
+- ✅ Rule-based data transformation system
+- ✅ Client-to-CSV export batch job
+- ✅ Command line job execution
+- ✅ Comprehensive test suite
+- ✅ Rule engine for data processing
 
-### 主要组件说明
-
-#### Application.java
-Spring Boot应用入口点，使用`@SpringBootApplication`注解启动应用。
+### Key Components
 
 #### BatchConfig.java
-Spring Batch配置类，包含：
-- `sampleJob`: 示例批处理作业
-- `sampleStep`: 示例步骤
-- `sampleTasklet`: 示例任务单元，输出执行信息
+Spring Batch configuration containing:
+- `clientToCsvJob`: PostgreSQL to CSV export job
+- `clientToCsvStep`: Step with ItemReader/ItemProcessor/ItemWriter pattern
+- Database transaction management
 
-#### application.yml
-应用配置文件，包含：
-- H2数据库配置
-- Spring Batch配置
-- JPA配置
-- 日志配置
-- 服务器端口配置
+#### RuleEngine.java
+Rule engine implementation for data transformations:
+- Name formatting (uppercase conversion)
+- Age categorization (Young/Adult/Senior)
+- Extensible rule system
 
-## 访问管理端点
+#### ClientRuleProcessor.java
+ItemProcessor implementation that applies business rules to Client entities during batch processing.
 
-### H2控制台
-应用启动后，可通过以下URL访问H2数据库控制台：
-```
-http://localhost:8080/h2-console
-```
-连接参数：
-- JDBC URL: `jdbc:h2:mem:testdb`
-- Username: `sa`
-- Password: (留空)
+#### JobRunner.java
+Command line runner for programmatic job execution with parameter support.
 
-### 健康检查端点
+## Database Configuration
+
+### PostgreSQL (Production)
+- Database: `poc`
+- Host: `localhost:5432`
+- Username: `xinhua`
+- Password: (empty)
+- Connection pool: HikariCP (max 10 connections)
+
+### H2 (Testing)
+- In-memory database for test isolation
+- Automatic schema generation
+
+## Management Endpoints
+
+### Actuator Endpoints
 ```
 http://localhost:8080/actuator/health
 http://localhost:8080/actuator/info
 http://localhost:8080/actuator/metrics
+http://localhost:8080/actuator/beans
 ```
 
-## 执行批处理作业
+## Batch Jobs
 
-### 通过REST API执行（需要额外配置Controller）
+### clientToCsvJob
+Exports client data from PostgreSQL to CSV with rule-based transformations:
+
+**Input**: PostgreSQL `clients` table
+**Processing**: Apply business rules (name formatting, age categorization)
+**Output**: CSV file with transformed data
+
+**Execution**:
 ```bash
-# 示例：触发sampleJob
-curl -X POST http://localhost:8080/jobs/sampleJob
+mvn spring-boot:run -Dspring-boot.run.arguments="clientToCsv"
 ```
 
-### 通过JobLauncher编程执行
-```java
-@Autowired
-private JobLauncher jobLauncher;
+## Development Guide
 
-@Autowired
-private Job sampleJob;
+### Adding New Jobs
+1. Create Job beans in BatchConfig following the `clientToCsvJob` pattern
+2. Define Steps using StepBuilder with ItemReader/ItemProcessor/ItemWriter
+3. Add job execution logic to JobRunner
+4. Configure appropriate ItemReaders for data sources
 
-public void runJob() throws Exception {
-    JobParameters params = new JobParametersBuilder()
-        .addLong("time", System.currentTimeMillis())
-        .toJobParameters();
-    
-    JobExecution execution = jobLauncher.run(sampleJob, params);
-    System.out.println("Job Status: " + execution.getStatus());
-}
-```
+### Extending Rule Engine
+1. Add new rule methods to RuleEngine class
+2. Update ClientRuleProcessor to apply new rules
+3. Add corresponding unit tests
+4. Update CSV output format if needed
 
-## 扩展开发指南
+### Data Processing Patterns
+- **Database to File**: JdbcCursorItemReader + FlatFileItemWriter
+- **File to Database**: FlatFileItemReader + JdbcBatchItemWriter
+- **Data Transformation**: ItemProcessor with rule engine integration
 
-### 添加新的Job
-1. 在`BatchConfig`类中创建新的Job Bean
-2. 定义相关的Step
-3. 实现ItemReader、ItemProcessor、ItemWriter或Tasklet
+## Testing
 
-### 添加规则引擎
-1. 添加规则引擎依赖（如Drools）
-2. 创建规则配置类
-3. 在Step中集成规则处理
+### Test Categories
+- **Unit Tests**: Individual component testing
+- **Integration Tests**: Full job execution testing
+- **Manual Tests**: Real database scenario testing
 
-### 数据源配置
-如需使用其他数据库，修改`application.yml`中的datasource配置：
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/batchdb
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: password
-```
+### Test Database
+Tests use H2 in-memory database with automatic cleanup and test data setup.
 
-## 常见问题
+## FAQ
 
-### Q: 如何禁用Job自动执行？
-A: 在`application.yml`中设置`spring.batch.job.enabled=false`
+### Q: How to disable automatic job execution?
+A: Set `spring.batch.job.enabled=false` in `application.yml`
 
-### Q: 如何查看批处理执行历史？
-A: 查询Spring Batch元数据表：
+### Q: How to view batch execution history?
+A: Query Spring Batch metadata tables:
 - BATCH_JOB_INSTANCE
 - BATCH_JOB_EXECUTION
 - BATCH_STEP_EXECUTION
 
-### Q: 如何配置并行处理？
-A: 在Step配置中使用`taskExecutor`和`throttleLimit`：
+### Q: How to configure parallel processing?
+A: Use `taskExecutor` and `throttleLimit` in Step configuration:
 ```java
 .tasklet(tasklet())
 .taskExecutor(taskExecutor())
 .throttleLimit(10)
 ```
 
-## 项目维护
-- **作者**: Accenture POC Team
-- **版本**: 1.0.0-SNAPSHOT
-- **许可**: 内部使用
+### Q: How to add new transformation rules?
+A: Add methods to RuleEngine class and update ClientRuleProcessor to apply them.
 
-## 后续计划
-- [ ] 添加REST控制器用于Job管理
-- [ ] 集成规则引擎（Drools/Easy Rules）
-- [ ] 添加更多批处理模式示例
-- [ ] 实现错误处理和重试机制
-- [ ] 添加监控和报告功能
+## Project Information
+- **Author**: Accenture POC Team
+- **Version**: 1.0.0-SNAPSHOT
+- **Repository**: https://github.com/xinhuagu/spring-batch-rule-poc
+
+## Roadmap
+- [ ] Add REST controllers for job management
+- [ ] Implement error handling and retry mechanisms
+- [ ] Add monitoring and reporting features
+- [ ] Extend rule engine with external rule definitions
+- [ ] Add more batch processing patterns
