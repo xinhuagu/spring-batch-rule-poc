@@ -40,12 +40,12 @@ class BatchConfigTest {
     private JobLauncherTestUtils jobLauncherTestUtils;
     
     @Autowired
-    @Qualifier("sampleJob")
-    private Job sampleJob;
+    @Qualifier("clientToCsvJob")
+    private Job clientToCsvJob;
 
     @Test
-    void testSampleJob() throws Exception {
-        jobLauncherTestUtils.setJob(sampleJob);
+    void testClientToCsvJob() throws Exception {
+        jobLauncherTestUtils.setJob(clientToCsvJob);
         
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
@@ -54,14 +54,14 @@ class BatchConfigTest {
         JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
 
         assertEquals("COMPLETED", jobExecution.getStatus().toString());
-        assertEquals("sampleJob", jobExecution.getJobInstance().getJobName());
+        assertEquals("clientToCsvJob", jobExecution.getJobInstance().getJobName());
     }
 
     @Test
-    void testSampleStep() throws Exception {
-        jobLauncherTestUtils.setJob(sampleJob);
+    void testExportClientToCsvStep() throws Exception {
+        jobLauncherTestUtils.setJob(clientToCsvJob);
         
-        JobExecution jobExecution = jobLauncherTestUtils.launchStep("sampleStep");
+        JobExecution jobExecution = jobLauncherTestUtils.launchStep("exportClientToCsvStep");
         
         assertEquals("COMPLETED", jobExecution.getStatus().toString());
         assertEquals(1, jobExecution.getStepExecutions().size());

@@ -10,14 +10,12 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
-import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
@@ -35,33 +33,6 @@ public class BatchConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final DataSource dataSource;
-
-    @Bean
-    public Job sampleJob() {
-        return new JobBuilder("sampleJob", jobRepository)
-                .incrementer(new RunIdIncrementer())
-                .start(sampleStep())
-                .build();
-    }
-
-    @Bean
-    public Step sampleStep() {
-        return new StepBuilder("sampleStep", jobRepository)
-                .tasklet(sampleTasklet(), transactionManager)
-                .build();
-    }
-
-    @Bean
-    public Tasklet sampleTasklet() {
-        return (contribution, chunkContext) -> {
-            log.info("Executing sample tasklet");
-            log.info("Job Name: {}", chunkContext.getStepContext().getJobName());
-            log.info("Step Name: {}", chunkContext.getStepContext().getStepName());
-            log.info("Job Execution ID: {}", chunkContext.getStepContext().getStepExecution().getJobExecutionId());
-            log.info("Sample tasklet completed successfully");
-            return RepeatStatus.FINISHED;
-        };
-    }
 
     @Bean
     public Job clientToCsvJob() {
