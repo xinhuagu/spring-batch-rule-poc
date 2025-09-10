@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Spring Boot 3 application demonstrating Spring Batch integration with a planned rule engine. The POC uses Java 17, Maven, and H2 in-memory database for batch processing operations.
+This is a Spring Boot 3 application demonstrating Spring Batch integration with a planned rule engine. The POC uses Java 17, Maven, and PostgreSQL database for batch processing operations with CSV export capabilities.
 
 ## Core Commands
 
@@ -26,6 +26,9 @@ mvn test -Dtest=ApplicationTests       # Run application integration tests
 ```bash
 mvn spring-boot:run      # Run using Maven plugin
 java -jar target/spring-batch-rule-poc-1-1.0.0-SNAPSHOT.jar  # Run packaged JAR
+
+# Run specific batch jobs
+mvn spring-boot:run -Dspring-boot.run.arguments="clientToCsv"  # Run client-to-CSV job
 ```
 
 ## Architecture Overview
@@ -34,28 +37,36 @@ java -jar target/spring-batch-rule-poc-1-1.0.0-SNAPSHOT.jar  # Run packaged JAR
 - `com.accenture.poc1` - Root package
   - `Application.java` - Spring Boot main class
   - `config/BatchConfig.java` - Spring Batch configuration with job definitions
+  - `model/Client.java` - Client entity model for data processing
+  - `runner/JobRunner.java` - CommandLineRunner for executing batch jobs
 
 ### Key Components
 
 **BatchConfig.java** - Central batch configuration containing:
-- `sampleJob` - Main batch job definition using JobBuilder
-- `sampleStep` - Step implementation using StepBuilder  
-- `sampleTasklet` - Simple tasklet that logs execution context information
-- Uses constructor injection with JobRepository and PlatformTransactionManager
+- `clientToCsvJob` - PostgreSQL to CSV export batch job
+- `clientToCsvStep` - Step that reads from PostgreSQL clients table and writes to CSV
+- Uses ItemReader/ItemWriter pattern for data processing
+- Configured with appropriate transaction management for database operations
+
+**JobRunner.java** - Command line job execution:
+- Implements CommandLineRunner for programmatic job execution
+- Supports conditional job execution based on command line arguments
+- Handles job parameter generation and execution logging
 
 ### Spring Batch Setup
 - Uses `@EnableBatchProcessing` annotation
-- Configured with H2 database for metadata storage
+- Configured with PostgreSQL database for metadata storage
 - Job auto-execution is disabled (`spring.batch.job.enabled=false`)
-- Batch metadata tables initialized automatically
-- Uses RunIdIncrementer for job parameter management
+- Batch metadata tables initialized automatically with `BATCH_` prefix
+- JobRunner provides programmatic job execution control
 
 ### Database Configuration
-- H2 in-memory database (`jdbc:h2:mem:testdb`)
-- H2 console enabled at `/h2-console` for development
-- Connection details: username=`sa`, password=(empty)
-- Hibernate with `create-drop` DDL strategy
-- SQL logging enabled for debugging
+- PostgreSQL database (`jdbc:postgresql://localhost:5432/poc`)
+- Connection details: username=`xinhua`, password=(empty)
+- Hibernate with `update` DDL strategy
+- HikariCP connection pooling with max 10 connections
+- SQL logging enabled for debugging with formatted output
+- H2 database used for tests only
 
 ### Testing Setup
 - Uses `@SpringBootTest` for integration tests
@@ -73,11 +84,24 @@ java -jar target/spring-batch-rule-poc-1-1.0.0-SNAPSHOT.jar  # Run packaged JAR
 ### Management Endpoints
 Available actuator endpoints: `/actuator/health`, `/actuator/info`, `/actuator/metrics`, `/actuator/beans`
 
+### Current Batch Jobs
+- `clientToCsvJob` - Exports client data from PostgreSQL to CSV file
+  - Reads from `clients` table using JdbcCursorItemReader
+  - Processes data through Client model objects
+  - Writes to CSV file using FlatFileItemWriter
+  - Configurable output file location and CSV format
+
 ### Extending the Application
 When adding new Jobs:
-1. Create Job beans in BatchConfig following the existing pattern
-2. Define Steps using StepBuilder with appropriate transaction manager
-3. Implement Tasklets or use ItemReader/ItemProcessor/ItemWriter pattern
-4. Add corresponding unit tests following BatchConfigTest structure
+1. Create Job beans in BatchConfig following the existing `clientToCsvJob` pattern
+2. Define Steps using StepBuilder with ItemReader/ItemProcessor/ItemWriter pattern
+3. Add job execution logic to JobRunner for command-line triggering
+4. Configure appropriate ItemReaders for data sources (JDBC, JPA, File)
+5. Add corresponding unit tests following BatchConfigTest structure
 
-The application is structured to accommodate future rule engine integration with the existing batch processing framework.
+### Data Processing Patterns
+- **Database to File**: Use JdbcCursorItemReader + FlatFileItemWriter
+- **File to Database**: Use FlatFileItemReader + JdbcBatchItemWriter
+- **Data Transformation**: Implement ItemProcessor for business logic
+
+The application demonstrates PostgreSQL integration and is structured to accommodate future rule engine integration with the existing batch processing framework.
