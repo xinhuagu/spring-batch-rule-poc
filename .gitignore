@@ -154,3 +154,6 @@ ehthumbs.db
 
 # JUnit
 junit*.properties
+
+# CSV exports
+*.csv
