@@ -1,6 +1,7 @@
 package com.accenture.poc1.config;
 
 import com.accenture.poc1.model.Client;
+import com.accenture.poc1.processor.ClientRuleProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -33,6 +34,7 @@ public class BatchConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final DataSource dataSource;
+    private final ClientRuleProcessor clientRuleProcessor;
 
     @Bean
     public Job clientToCsvJob() {
@@ -47,6 +49,7 @@ public class BatchConfig {
         return new StepBuilder("exportClientToCsvStep", jobRepository)
                 .<Client, Client>chunk(10, transactionManager)
                 .reader(clientItemReader())
+                .processor(clientRuleProcessor)
                 .writer(clientCsvItemWriter())
                 .build();
     }
@@ -64,7 +67,7 @@ public class BatchConfig {
     @Bean
     public FlatFileItemWriter<Client> clientCsvItemWriter() {
         BeanWrapperFieldExtractor<Client> fieldExtractor = new BeanWrapperFieldExtractor<>();
-        fieldExtractor.setNames(new String[]{"id", "name", "age"});
+        fieldExtractor.setNames(new String[]{"id", "name", "age", "ageCategory"});
 
         DelimitedLineAggregator<Client> lineAggregator = new DelimitedLineAggregator<>();
         lineAggregator.setDelimiter(",");
@@ -74,7 +77,7 @@ public class BatchConfig {
                 .name("clientCsvItemWriter")
                 .resource(new FileSystemResource("clients_export.csv"))
                 .lineAggregator(lineAggregator)
-                .headerCallback(writer -> writer.write("id,name,age"))
+                .headerCallback(writer -> writer.write("id,name,age,ageCategory"))
                 .build();
     }
 }
