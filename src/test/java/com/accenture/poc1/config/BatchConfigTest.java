@@ -1,12 +1,14 @@
 package com.accenture.poc1.config;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.batch.test.context.SpringBatchTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -36,9 +38,15 @@ class BatchConfigTest {
 
     @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
+    
+    @Autowired
+    @Qualifier("sampleJob")
+    private Job sampleJob;
 
     @Test
     void testSampleJob() throws Exception {
+        jobLauncherTestUtils.setJob(sampleJob);
+        
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .toJobParameters();
@@ -51,6 +59,8 @@ class BatchConfigTest {
 
     @Test
     void testSampleStep() throws Exception {
+        jobLauncherTestUtils.setJob(sampleJob);
+        
         JobExecution jobExecution = jobLauncherTestUtils.launchStep("sampleStep");
         
         assertEquals("COMPLETED", jobExecution.getStatus().toString());

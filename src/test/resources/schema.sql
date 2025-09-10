@@ -1,0 +1,6 @@
+-- Client table for testing
+CREATE TABLE IF NOT EXISTS client (
+    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    age INTEGER NOT NULL
+);

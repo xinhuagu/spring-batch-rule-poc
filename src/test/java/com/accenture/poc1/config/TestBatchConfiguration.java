@@ -19,6 +19,7 @@ public class TestBatchConfiguration {
     public DataSourceInitializer dataSourceInitializer(DataSource dataSource) {
         ResourceDatabasePopulator resourceDatabasePopulator = new ResourceDatabasePopulator();
         resourceDatabasePopulator.addScript(new ClassPathResource("org/springframework/batch/core/schema-h2.sql"));
+        resourceDatabasePopulator.setContinueOnError(true);
         
         DataSourceInitializer initializer = new DataSourceInitializer();
         initializer.setDataSource(dataSource);
