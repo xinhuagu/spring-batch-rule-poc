@@ -42,10 +42,12 @@ class ClientToCsvManualTest {
         File csvFile = new File("clients_export.csv");
         assertTrue(csvFile.exists(), "CSV file should be created");
         
-        // Verify CSV content has header and data
+        // Verify CSV content has header and data with rule transformations
         String content = Files.readString(Paths.get("clients_export.csv"));
-        assertTrue(content.startsWith("id,name,age"), "CSV should have header row");
-        assertTrue(content.contains("John Doe"), "CSV should contain test data");
+        assertTrue(content.startsWith("id,name,age,ageCategory"), "CSV should have header row with ageCategory");
+        assertTrue(content.contains("JOHN DOE"), "CSV should contain test data with uppercase names");
+        assertTrue(content.contains("Adult") || content.contains("Young") || content.contains("Senior"), 
+                  "CSV should contain age categories");
         
         // Clean up
         csvFile.delete();

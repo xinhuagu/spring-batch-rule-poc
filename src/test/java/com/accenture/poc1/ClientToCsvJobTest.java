@@ -46,8 +46,8 @@ class ClientToCsvJobTest {
         File csvFile = new File("clients_export.csv");
         assertTrue(csvFile.exists(), "CSV file should be created");
         
-        // Verify CSV content has header
+        // Verify CSV content has header with ageCategory
         String content = Files.readString(Paths.get("clients_export.csv"));
-        assertTrue(content.startsWith("id,name,age"), "CSV should have header row");
+        assertTrue(content.startsWith("id,name,age,ageCategory"), "CSV should have header row with ageCategory");
     }
 }
