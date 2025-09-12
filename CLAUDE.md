@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Important
+- ALL instructions within this document MUST BE FOLLOWED, these are not optional unless explicitly stated.
+- ASK FOR CLARIFICATION If you are uncertain of any of thing within the document.
+- DO NOT edit more code than you have to.
+- DO NOT WASTE TOKENS, be succinct and concise.
+
 ## Project Overview
 
 Spring Boot 3 application demonstrating Spring Batch with an enhanced JSON-based rule engine for data transformation. Uses Java 17, Maven, PostgreSQL for production, and H2 for testing.
@@ -20,7 +26,6 @@ mvn test -Dtest=EnhancedRuleEngineTest#testValidateRuleType  # Run specific test
 
 ### Run Application
 ```bash
-mvn spring-boot:run                    # Run with default configuration
 mvn spring-boot:run -Dspring-boot.run.arguments="clientToCsv"  # Execute specific batch job
 java -jar target/spring-batch-rule-poc-1-1.0.0-SNAPSHOT.jar clientToCsv  # Run from JAR
 ```
