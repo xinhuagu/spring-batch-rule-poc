@@ -1,7 +1,7 @@
 package com.accenture.poc1.processor;
 
 import com.accenture.poc1.model.Client;
-import com.accenture.poc1.rule.RuleEngine;
+import com.accenture.poc1.rule.EnhancedRuleEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ClientRuleProcessor implements ItemProcessor<Client, Client> {
 
-    private final RuleEngine ruleEngine;
+    private final EnhancedRuleEngine ruleEngine;
 
     @Override
     public Client process(Client item) throws Exception {

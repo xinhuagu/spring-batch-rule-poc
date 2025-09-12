@@ -1,0 +1,195 @@
+{
+  "rules": [
+    {
+      "id": "age-cat-young",
+      "fieldName": "age",
+      "type": "CATEGORIZE",
+      "priority": 100,
+      "enabled": true,
+      "description": "Categorize young age group",
+      "condition": {
+        "operator": "<=",
+        "value": 25
+      },
+      "action": "Young"
+    },
+    {
+      "id": "age-cat-adult",
+      "fieldName": "age",
+      "type": "CATEGORIZE",
+      "priority": 100,
+      "enabled": true,
+      "description": "Categorize adult age group",
+      "condition": {
+        "operator": "BETWEEN",
+        "min": 26,
+        "max": 40
+      },
+      "action": "Adult"
+    },
+    {
+      "id": "age-cat-senior",
+      "fieldName": "age",
+      "type": "CATEGORIZE",
+      "priority": 100,
+      "enabled": true,
+      "description": "Categorize senior age group",
+      "condition": {
+        "operator": ">",
+        "value": 40
+      },
+      "action": "Senior"
+    },
+    {
+      "id": "mask-chen-names",
+      "fieldName": "name",
+      "type": "MASK",
+      "priority": 10,
+      "enabled": true,
+      "description": "Mask names containing CHEN",
+      "condition": {
+        "operator": "CONTAINS",
+        "value": "CHEN",
+        "caseSensitive": false
+      },
+      "action": {
+        "maskType": "FULL",
+        "maskChar": "*",
+        "length": 9
+      }
+    },
+    {
+      "id": "mask-david-thomas",
+      "fieldName": "name",
+      "type": "MASK",
+      "priority": 20,
+      "enabled": true,
+      "description": "Mask specific name DAVID THOMAS",
+      "condition": {
+        "operator": "EQUALS",
+        "value": "DAVID THOMAS",
+        "caseSensitive": false
+      },
+      "action": {
+        "maskType": "FULL",
+        "maskChar": "*",
+        "length": 7
+      }
+    },
+    {
+      "id": "mask-ssn-partial",
+      "fieldName": "ssn",
+      "type": "MASK",
+      "priority": 5,
+      "enabled": true,
+      "description": "Partially mask SSN showing last 4 digits",
+      "condition": {
+        "operator": "REGEX",
+        "value": "^\\d{3}-\\d{2}-\\d{4}$"
+      },
+      "action": {
+        "maskType": "PARTIAL",
+        "maskChar": "X",
+        "showLast": 4,
+        "preserveFormat": true
+      }
+    },
+    {
+      "id": "validate-email",
+      "fieldName": "email",
+      "type": "VALIDATE",
+      "priority": 1,
+      "enabled": true,
+      "description": "Validate email format",
+      "condition": {
+        "operator": "REGEX",
+        "value": "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+      },
+      "action": {
+        "onInvalid": "REJECT",
+        "errorMessage": "Invalid email format"
+      }
+    },
+    {
+      "id": "validate-phone",
+      "fieldName": "phone",
+      "type": "VALIDATE",
+      "priority": 1,
+      "enabled": true,
+      "description": "Validate phone number format",
+      "condition": {
+        "operator": "REGEX",
+        "value": "^\\+?1?[-.\\s]?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}$"
+      },
+      "action": {
+        "onInvalid": "DEFAULT",
+        "defaultValue": "000-000-0000"
+      }
+    },
+    {
+      "id": "format-phone",
+      "fieldName": "phone",
+      "type": "FORMAT",
+      "priority": 50,
+      "enabled": true,
+      "description": "Format phone number to standard format",
+      "condition": {
+        "operator": "REGEX",
+        "value": "^\\d{10}$"
+      },
+      "action": {
+        "formatType": "PHONE",
+        "pattern": "({0}{1}{2}) {3}{4}{5}-{6}{7}{8}{9}"
+      }
+    },
+    {
+      "id": "format-date",
+      "fieldName": "birthDate",
+      "type": "FORMAT",
+      "priority": 50,
+      "enabled": true,
+      "description": "Format birth date to MM/dd/yyyy",
+      "condition": {
+        "operator": "NOT_NULL"
+      },
+      "action": {
+        "formatType": "DATE",
+        "inputFormat": "yyyy-MM-dd",
+        "outputFormat": "MM/dd/yyyy"
+      }
+    },
+    {
+      "id": "replace-profanity",
+      "fieldName": "comments",
+      "type": "REPLACE",
+      "priority": 30,
+      "enabled": true,
+      "description": "Replace profanity with asterisks",
+      "condition": {
+        "operator": "REGEX",
+        "value": "\\b(badword1|badword2|badword3)\\b",
+        "caseSensitive": false
+      },
+      "action": {
+        "replaceWith": "***"
+      }
+    },
+    {
+      "id": "uppercase-name",
+      "fieldName": "name",
+      "type": "TRANSFORM",
+      "priority": 200,
+      "enabled": true,
+      "description": "Convert names to uppercase",
+      "condition": {
+        "operator": "NOT_NULL"
+      },
+      "action": "UPPERCASE"
+    }
+  ],
+  "metadata": {
+    "version": "2.0",
+    "lastUpdated": "2025-09-12",
+    "author": "Rule Engine System"
+  }
+}
