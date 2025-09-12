@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "local-postgres": {
+      "type": "stdio",
+      "command": "postgres-mcp",
+      "args": [
+        "--access-mode=unrestricted"
+      ],
+      "env": {
+        "DATABASE_URI": "postgresql://xinhua.gu@localhost:5432/poc"
+      }
+    },
+    "context7": {
+      "transport": "http",
+      "url": "https://mcp.context7.com/mcp"
+    }
+  }
+}
