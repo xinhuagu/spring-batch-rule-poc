@@ -11,6 +11,18 @@ A Spring Boot 3 application demonstrating Spring Batch integration with an enhan
 - **Build Tool**: Maven
 - **Libraries**: Lombok, Jackson, Spring Data JPA, HikariCP
 
+## Architecture Overview
+
+![Spring Batch POC Architecture](docs/architecture-diagram.png)
+
+The architecture diagram above illustrates the core components and data flow:
+- **Batch Job**: Orchestrates the entire data processing pipeline
+- **Batch Step**: Contains the three main processing components (ItemRead, ItemProcess, ItemWrite)
+- **ItemRead**: Reads data from the PostgreSQL database
+- **ItemProcess**: Applies transformation rules via the Rule Engine
+- **ItemWrite**: Writes processed data to CSV format
+- **Rule Engine**: Managed by SubAgent (rule-engine-manager) for dynamic rule configuration and processing
+
 ## Project Structure
 ```
 spring-batch-rule-poc/
