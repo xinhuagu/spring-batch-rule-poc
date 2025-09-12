@@ -4,163 +4,142 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Spring Boot 3 application demonstrating Spring Batch integration with an implemented rule engine. The POC uses Java 17, Maven, and PostgreSQL database for batch processing operations with rule-based data transformation and CSV export capabilities.
+Spring Boot 3 application demonstrating Spring Batch with an enhanced JSON-based rule engine for data transformation. Uses Java 17, Maven, PostgreSQL for production, and H2 for testing.
 
 ## Core Commands
 
-### Build and Package
+### Build and Test
 ```bash
-mvn clean package        # Build and run all tests
-mvn clean install       # Build, test, and install to local repository
-mvn clean install -DskipTests  # Build without running tests
+mvn clean compile                      # Compile only
+mvn clean package                      # Build JAR and run tests
+mvn clean install -DskipTests          # Build and install without tests
+mvn test                              # Run all tests
+mvn test -Dtest=EnhancedRuleEngineTest  # Run specific test class
+mvn test -Dtest=EnhancedRuleEngineTest#testValidateRuleType  # Run specific test method
 ```
 
-### Running Tests
+### Run Application
 ```bash
-mvn test                 # Run all tests
-mvn test -Dtest=BatchConfigTest        # Run specific test class
-mvn test -Dtest=ApplicationTests       # Run application integration tests
+mvn spring-boot:run                    # Run with default configuration
+mvn spring-boot:run -Dspring-boot.run.arguments="clientToCsv"  # Execute specific batch job
+java -jar target/spring-batch-rule-poc-1-1.0.0-SNAPSHOT.jar clientToCsv  # Run from JAR
 ```
 
-### Running the Application
+### Database Operations
 ```bash
-mvn spring-boot:run      # Run using Maven plugin
-java -jar target/spring-batch-rule-poc-1-1.0.0-SNAPSHOT.jar  # Run packaged JAR
-
-# Run specific batch jobs
-mvn spring-boot:run -Dspring-boot.run.arguments="clientToCsv"  # Run client-to-CSV job
+psql -U xinhua.gu -d poc              # Connect to PostgreSQL database
+psql -U xinhua.gu -d poc -f create_client_table.sql  # Execute SQL script
+psql -U xinhua.gu -d poc -f insert_test_data.sql     # Load test data
 ```
 
 ## Architecture Overview
 
-### Package Structure
-- `com.accenture.poc1` - Root package
-  - `Application.java` - Spring Boot main class
-  - `config/BatchConfig.java` - Spring Batch configuration with job definitions
-  - `model/Client.java` - Client entity model for data processing
-  - `processor/ClientRuleProcessor.java` - ItemProcessor implementing rule-based transformations
-  - `rule/RuleEngine.java` - Rule engine for data transformation logic
-  - `rule/TransformationRule.java` - Rule definition model
-  - `runner/JobRunner.java` - CommandLineRunner for executing batch jobs
+### Rule Engine System
 
-### Key Components
+The application uses **EnhancedRuleEngine** (`com.accenture.poc1.rule.EnhancedRuleEngine`) which loads rules from `src/main/resources/rules.json`. The engine supports:
 
-**BatchConfig.java** - Central batch configuration containing:
-- `clientToCsvJob` - PostgreSQL to CSV export batch job
-- `clientToCsvStep` - Step that reads from PostgreSQL clients table, applies rules, and writes to CSV
-- Uses ItemReader/ItemProcessor/ItemWriter pattern with rule-based transformations
-- Configured with appropriate transaction management for database operations
-- Chunk size set to 10 for efficient processing
+- **Priority-based execution**: Rules execute in priority order (lower number = higher priority)
+- **Short-circuit processing**: MASK and VALIDATE rules stop further processing when matched
+- **Performance metrics**: Tracks execution count and time per rule
+- **Hot reload**: `reloadRules()` method allows runtime rule updates
 
-**RuleEngine.java** - Core rule processing engine:
-- Loads transformation rules from `rules.txt` file in classpath
-- Supports CATEGORIZE and TRANSFORM rule types
-- CATEGORIZE: converts numeric values to categories (age to Young/Adult/Senior)
-- TRANSFORM: applies text transformations (uppercase, lowercase, titlecase)
-- Extensible design for adding new rule types and conditions
+Rule types hierarchy:
+1. **VALIDATE** (priority 1): Data validation with reject/default actions
+2. **MASK** (priority 5-20): Full/partial/format-preserving masking
+3. **REPLACE** (priority 30): Regex-based pattern replacement
+4. **FORMAT** (priority 50): Date/phone/number formatting
+5. **CATEGORIZE** (priority 100): Numeric to category conversion
+6. **TRANSFORM** (priority 200): Text transformations (uppercase/lowercase/titlecase)
 
-**ClientRuleProcessor.java** - Spring Batch ItemProcessor:
-- Implements rule-based transformations during batch processing
-- Applies name formatting rules (converts to uppercase)
-- Applies age categorization rules (adds ageCategory field)
-- Integrates with RuleEngine for consistent rule application
+### Spring Batch Configuration
 
-**JobRunner.java** - Command line job execution:
-- Implements CommandLineRunner for programmatic job execution
-- Supports conditional job execution based on command line arguments
-- Handles job parameter generation and execution logging
+**BatchConfig** (`com.accenture.poc1.config.BatchConfig`) defines:
+- `clientToCsvJob`: Main batch job reading from PostgreSQL `client` table
+- `clientToCsvStep`: Processing step with chunk size 10
+- Reader: `JdbcCursorItemReader` fetching from database
+- Processor: `ClientRuleProcessor` applying `EnhancedRuleEngine` rules
+- Writer: `FlatFileItemWriter` generating `clients_export.csv`
 
-### Spring Batch Setup
-- Uses `@EnableBatchProcessing` annotation
-- Configured with PostgreSQL database for metadata storage
-- Job auto-execution is disabled (`spring.batch.job.enabled=false`)
-- Batch metadata tables initialized automatically with `BATCH_` prefix
-- JobRunner provides programmatic job execution control
+**JobRunner** (`com.accenture.poc1.runner.JobRunner`) handles programmatic job execution via CommandLineRunner interface.
+
+### Rule Configuration Structure
+
+Rules are defined in `rules.json` with this structure:
+```json
+{
+  "rules": [{
+    "id": "unique-id",
+    "fieldName": "target-field",
+    "type": "RULE_TYPE",
+    "priority": 10,
+    "enabled": true,
+    "condition": {
+      "operator": "EQUALS|CONTAINS|REGEX|BETWEEN|>|<=",
+      "value": "match-value",
+      "caseSensitive": false
+    },
+    "action": "string-or-object"
+  }]
+}
+```
 
 ### Database Configuration
-- PostgreSQL database (`jdbc:postgresql://localhost:5432/poc`)
-- Connection details: username=`xinhua.gu`, password=(empty)
-- Hibernate with `update` DDL strategy
-- HikariCP connection pooling with max 10 connections, 30s timeout
-- SQL logging enabled for debugging with formatted output
-- H2 database used for tests with in-memory configuration
-- Test database uses create-drop DDL strategy for clean test isolation
 
-### Testing Setup
-- Uses `@SpringBootTest` for integration tests
-- `TestBatchConfiguration.java` provides test-specific batch setup
-- Test profile uses separate `application-test.yml` configuration
-- BatchConfigTest demonstrates job execution testing patterns
+- **Production**: PostgreSQL at `localhost:5432/poc` (user: `xinhua.gu`, no password)
+- **Testing**: H2 in-memory database with auto-schema generation
+- **Connection Pool**: HikariCP with max 10 connections, 30s timeout
+- **Hibernate**: DDL auto-update for development
 
-## Development Notes
+## Key Implementation Details
 
-### Configuration Files
-- `application.yml` - Main application configuration with detailed logging setup
-- `application-test.yml` - Test-specific overrides
-- Logging configured for Spring Batch debugging with custom patterns
+### Rule Processing Flow
 
-### Management Endpoints
-Available actuator endpoints: `/actuator/health`, `/actuator/info`, `/actuator/metrics`, `/actuator/beans`
+1. **EnhancedRuleEngine.applyRules()** receives field name and value
+2. Rules are retrieved from pre-indexed map by field name
+3. Rules execute in priority order
+4. For VALIDATE/REPLACE rules, special handling bypasses condition check in main flow
+5. MASK rules cause immediate return after application (short-circuit)
+6. Metrics are tracked for each rule execution
 
-### Rule-Based Data Processing
+### Adding New Rule Types
 
-**Rule Definition Format** (`src/main/resources/rules.txt`):
-```
-FIELD_NAME:RULE_TYPE:CONDITION:ACTION
-```
+1. Add case in `EnhancedRuleEngine.applyRule()` switch statement
+2. Implement `apply[RuleType]Rule()` method
+3. Add rule definitions to `rules.json`
+4. Create test cases in `EnhancedRuleEngineTest`
 
-**Current Rules:**
-- `age:CATEGORIZE:<=25:Young` - Ages 25 and below become "Young"  
-- `age:CATEGORIZE:26-40:Adult` - Ages 26-40 become "Adult"
-- `age:CATEGORIZE:>40:Senior` - Ages over 40 become "Senior"
-- `name:TRANSFORM:*:UPPERCASE` - All names converted to uppercase
+### Batch Job Data Flow
 
-**Rule Types:**
-- **CATEGORIZE**: Converts numeric values to categories based on conditions
-  - Supports `<=`, `>`, and range conditions (`26-40`)
-- **TRANSFORM**: Applies text transformations to string fields
-  - Supports `UPPERCASE`, `LOWERCASE`, `TITLECASE` actions
+1. JobRunner checks command line arguments for job name
+2. Launches job with timestamp parameter for uniqueness
+3. JdbcCursorItemReader queries all clients from database
+4. ClientRuleProcessor applies rules to each Client object:
+   - Name field gets MASK/TRANSFORM rules
+   - Age field gets CATEGORIZE rules
+   - Creates new Client with transformed data and ageCategory
+5. FlatFileItemWriter outputs CSV with headers
 
-### Current Batch Jobs
-- `clientToCsvJob` - Exports client data from PostgreSQL to CSV with rule-based transformations
-  - Reads from `client` table using JdbcCursorItemReader
-  - Processes data through ClientRuleProcessor applying transformation rules
-  - Writes to CSV file (`clients_export.csv`) using FlatFileItemWriter
-  - CSV includes: id, name, age, ageCategory columns
-  - Header row automatically generated
+## Testing Strategy
 
-### Extending the Application
+- **Unit Tests**: Test individual rule types and conditions
+- **Integration Tests**: `BatchConfigTest` verifies job execution
+- **Rule Engine Tests**: `EnhancedRuleEngineTest` covers all 16 rule scenarios
+- **Test Data**: Uses H2 with `src/test/resources/schema.sql` and `data.sql`
 
-**Adding New Batch Jobs:**
-1. Create Job beans in BatchConfig following the existing `clientToCsvJob` pattern
-2. Define Steps using StepBuilder with ItemReader/ItemProcessor/ItemWriter pattern
-3. Add job execution logic to JobRunner for command-line triggering
-4. Configure appropriate ItemReaders for data sources (JDBC, JPA, File)
-5. Add corresponding unit tests following BatchConfigTest structure
+## Development SQL Scripts
 
-**Adding New Rule Types:**
-1. Add new rule type constants to RuleEngine (e.g., "VALIDATE", "MASK")
-2. Implement rule logic in RuleEngine.applyRule() method
-3. Update rules.txt with new rule definitions
-4. Add unit tests in RuleEngineTest
-5. Update processors to handle new transformed fields if needed
+- `create_client_table.sql`: PostgreSQL client table DDL
+- `insert_test_data.sql`: Sample production data
+- `add_more_clients.sql`: Additional test data with special cases
+- `src/test/resources/`: H2 test database initialization
 
-**Adding New Processors:**
-1. Implement ItemProcessor<InputType, OutputType> interface
-2. Inject RuleEngine dependency for rule-based transformations
-3. Register as @Component for Spring dependency injection
-4. Wire into BatchConfig steps as needed
+## Current Rule Configuration
 
-### Data Processing Patterns
-- **Database to File**: JdbcCursorItemReader + ItemProcessor + FlatFileItemWriter
-- **File to Database**: FlatFileItemReader + ItemProcessor + JdbcBatchItemWriter  
-- **Rule-Based Transformation**: ItemProcessor with RuleEngine integration
-- **Multi-Field Processing**: Single processor handling multiple field transformations
-
-### Development Files
-- `create_client_table.sql` - PostgreSQL table creation script
-- `insert_test_data.sql` - Sample data for testing
-- `src/test/resources/data.sql` - Test data initialization
-- `src/test/resources/schema.sql` - Test database schema
-
-The application demonstrates a fully functional rule-based batch processing system with PostgreSQL integration and extensible transformation capabilities.
+The system includes 12 active rules in `rules.json`:
+- Age categorization (Young/Adult/Senior)
+- Name masking for privacy (CHEN names, DAVID THOMAS)
+- SSN partial masking with format preservation
+- Email/phone validation
+- Phone/date formatting
+- Profanity replacement
+- Name uppercase transformation
